@@ -100,7 +100,10 @@ On the free tier, the service **spins down after 15 minutes of inactivity**. The
 | **Build Command** | `npm run build` (default) |
 | **Output Directory** | `.next` (default) |
 
-> **Critical:** You **must** set **Root Directory** to `frontend`. If left empty or set to `.`, Vercel will detect the Python backend and fail with "No fastapi entrypoint found". The backend is deployed separately on Render.
+> **Critical:** You **must** set **Root Directory** to `frontend`. If left empty or set to `.`, Vercel will fail because:
+> - It may detect the Python backend and error with "No fastapi entrypoint found"
+> - Or it will error with "No Next.js version detected" (Next.js is in `frontend/`, not at the repo root)
+> The backend is deployed separately on Render.
 
 ### Step 3: Environment Variable
 
@@ -154,8 +157,8 @@ allow_origins=[
 
 ## Troubleshooting
 
-### Frontend: "No fastapi entrypoint found"
-- **Cause:** Vercel is building from the repo root instead of the `frontend` directory, and it detects the Python backend.
+### Frontend: "No fastapi entrypoint found" or "No Next.js version detected"
+- **Cause:** Vercel is building from the repo root instead of the `frontend` directory. The Next.js app and its `package.json` live in `frontend/`.
 - **Fix:** In Vercel Dashboard → Project Settings → General → **Root Directory**, set to `frontend` (not empty, not `.`). Redeploy.
 
 ### Backend: "Models not found"
