@@ -1,4 +1,4 @@
-# Deployment Guide: Backend on Render + Frontend on Vercel
+# Deployment Guide: Backend on Render/Railway + Frontend on Vercel
 
 This guide explains how to deploy the Urdu Story Generator without Docker Hub, directly from GitHub.
 
@@ -76,6 +76,38 @@ If Render detects the wrong root, set **Root Directory** to: `.` (project root)
 ### Step 7: Free Tier Note
 
 On the free tier, the service **spins down after 15 minutes of inactivity**. The first request after idle may take 30–60 seconds to wake up. For always-on service, use a paid plan.
+
+---
+
+## Part 1a: Deploy Backend to Railway (Alternative to Render)
+
+Railway uses **Railpack** by default, which can fail with "Error creating build plan with Railpack" for monorepos. This project includes `railway.json` to use the **Dockerfile** instead.
+
+### Prerequisites
+- GitHub repo with your code
+- [Railway](https://railway.app) account (free tier: $5 credit/month)
+
+### Step 1: Create a New Project
+
+1. Go to [Railway Dashboard](https://railway.app/dashboard)
+2. Click **New Project** → **Deploy from GitHub repo**
+3. Select `talatops/URDU-STORY-GENERATOR`
+4. Railway will detect `railway.json` and use the Dockerfile builder
+
+### Step 2: Root Directory
+
+Set **Root Directory** to `.` (project root) so the Dockerfile build context includes `tokenizer/`, `model/`, `data/`, etc.
+
+### Step 3: Deploy
+
+1. Railway will build using `backend/Dockerfile` (trains models during build)
+2. First build may take 5–15 minutes
+3. Once deployed, go to **Settings** → **Networking** → **Generate Domain** to get your public URL
+4. Copy the URL, e.g. `https://your-service.up.railway.app`
+
+### Step 4: Connect Frontend
+
+Add the Railway backend URL to your Vercel frontend env var: `NEXT_PUBLIC_API_URL` = `https://your-service.up.railway.app`
 
 ---
 
@@ -158,8 +190,15 @@ allow_origins=[
 ## Troubleshooting
 
 ### Frontend: "No fastapi entrypoint found" or "No Next.js version detected"
-- **Cause:** Vercel is building from the repo root instead of the `frontend` directory. The Next.js app and its `package.json` live in `frontend/`.
-- **Fix:** In Vercel Dashboard → Project Settings → General → **Root Directory**, set to `frontend` (not empty, not `.`). Redeploy.
+- **Cause:** Vercel is building from the repo root instead of the `frontend` directory. The Next.js app and its `package.json` live in `frontend/`. Custom commands like `cd frontend && npm install` do **not** fix this—Vercel detects the framework from the Root Directory, not from where the install runs.
+- **Fix:**
+  1. Vercel Dashboard → Project Settings → **General** → **Root Directory** → Edit → set to `frontend` → Save
+  2. **Build and Deployment** → clear any custom **Install Command** and **Build Command** (use defaults)
+  3. Redeploy
+
+### Backend (Railway): "Error creating build plan with Railpack"
+- **Cause:** Railway defaults to Railpack, which cannot detect the build plan for this monorepo.
+- **Fix:** The repo includes `railway.json` that forces the **Dockerfile** builder. Ensure Root Directory is `.` (project root). If it still fails, in Railway → Settings → Build → set **Builder** to **Dockerfile** and **Dockerfile Path** to `backend/Dockerfile`.
 
 ### Backend: "Models not found"
 - Ensure the build command runs the full pipeline (create_sample_dataset → preprocess → train_tokenizer → train_model)

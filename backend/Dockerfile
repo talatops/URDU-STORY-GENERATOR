@@ -4,18 +4,29 @@ WORKDIR /app
 
 # Copy requirements and install dependencies
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-cache-dir -r requirements.txt -r backend/requirements.txt
 
 # Copy application code
 COPY tokenizer/ ./tokenizer/
 COPY model/ ./model/
 COPY backend/ ./backend/
+COPY data/ ./data/
 
-# Copy trained models (should be built during CI/CD or mounted as volume)
-COPY models/ ./models/
+# Copy training scripts
+COPY train_tokenizer.py train_model.py ./
 
-# Expose port
+# Create directories for pipeline output (gitignored, so not in repo)
+RUN mkdir -p data/raw data/processed models
+
+# Run training pipeline (creates models from sample data)
+RUN python data/create_sample_dataset.py && \
+    python data/preprocess.py && \
+    python train_tokenizer.py && \
+    python train_model.py
+
+# Expose port (Railway/Render set PORT env var)
 EXPOSE 8000
 
-# Run the application
+# Run the application (port overridden by railway.json startCommand)
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
