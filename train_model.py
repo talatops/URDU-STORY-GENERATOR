@@ -1,11 +1,11 @@
 """
-Training script for Kneser–Ney 4‑gram language model.
+Training script for trigram language model.
 Works with both BPE and word tokenizers via tokenizer.loader.
 """
 
 import os
 from tokenizer.loader import load_tokenizer
-from model.kneser_ney_ngram import KneserNeyNGramModel
+from model.trigram import TrigramModel
 
 
 def main():
@@ -44,14 +44,14 @@ def main():
 
     print(f"Tokenized {len(tokenized_corpus)} stories")
 
-    # Train Kneser–Ney 4‑gram model
-    print("\nTraining Kneser–Ney 4‑gram model...")
-    model = KneserNeyNGramModel(n=4, discount=0.75)
+    # Train trigram model
+    print("\nTraining trigram model...")
+    model = TrigramModel(lambda1=0.1, lambda2=0.3, lambda3=0.6)
     model.train(tokenized_corpus)
 
     # Save model
     os.makedirs("models", exist_ok=True)
-    model.save("models/kneser_ney_4gram.json")
+    model.save("models/trigram.json")
 
     # Test generation
     print("\n" + "=" * 60)

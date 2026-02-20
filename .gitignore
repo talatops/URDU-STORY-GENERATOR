@@ -9,12 +9,6 @@ env/
 ENV/
 .venv
 
-# Models and data
-models/*.json
-models/*.pkl
-data/raw/
-data/processed/
-
 # IDE
 .vscode/
 .idea/

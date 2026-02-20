@@ -15,7 +15,7 @@ A full-stack AI system that generates Urdu children's stories using classical NL
 ## Project Structure
 
 ```
-Aimen/
+Ello/
 ├── data/                 # Data collection and preprocessing
 │   ├── scraper.py       # Web scraper for Urdu stories
 │   └── preprocess.py    # Preprocessing pipeline

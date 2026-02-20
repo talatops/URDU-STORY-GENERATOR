@@ -15,7 +15,7 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tokenizer.loader import load_tokenizer
-from model.kneser_ney_ngram import KneserNeyNGramModel
+from model.trigram import TrigramModel
 
 
 app = FastAPI(title="Urdu Story Generation API")
@@ -31,7 +31,7 @@ app.add_middleware(
 
 # Global model and tokenizer (loaded at startup)
 tokenizer = None
-model: Optional[KneserNeyNGramModel] = None
+model: Optional[TrigramModel] = None
 
 
 class GenerateRequest(BaseModel):
@@ -48,37 +48,22 @@ class GenerateResponse(BaseModel):
 def load_models():
     """Load tokenizer and model."""
     global tokenizer, model
-    
+
     tokenizer_path = "models/tokenizer.json"
-    # Prefer new Kneser–Ney 4‑gram model; fall back to old trigram if needed
-    kn_model_path = "models/kneser_ney_4gram.json"
-    old_trigram_path = "models/trigram.json"
-    
+    model_path = "models/trigram.json"
+
     if not os.path.exists(tokenizer_path):
         raise FileNotFoundError(f"Tokenizer not found at {tokenizer_path}")
-    if not os.path.exists(kn_model_path) and not os.path.exists(old_trigram_path):
-        raise FileNotFoundError(
-            f"No language model found. Expected {kn_model_path} or {old_trigram_path}"
-        )
-    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Language model not found at {model_path}")
+
     print("Loading tokenizer...")
     tokenizer = load_tokenizer(tokenizer_path)
-    
-    # Load Kneser–Ney 4‑gram model if available
-    if os.path.exists(kn_model_path):
-        print("Loading Kneser–Ney 4‑gram model...")
-        model = KneserNeyNGramModel()
-        model.load(kn_model_path)
-    else:
-        # Backward‑compatibility: load old trigram model if present
-        from model.trigram import TrigramModel  # type: ignore
 
-        print("Loading legacy trigram model (fallback)...")
-        legacy_model = TrigramModel()
-        legacy_model.load(old_trigram_path)
-        # Wrap legacy model in a thin adapter so downstream code can use .generate()
-        model = legacy_model  # type: ignore
-    
+    print("Loading trigram model...")
+    model = TrigramModel()
+    model.load(model_path)
+
     print("Models loaded successfully!")
 
 
@@ -195,27 +180,13 @@ async def generate_story_stream(prefix: str, max_length: int = 500, temperature:
             generated_tokens = prefix_tokens.copy()
             eot_token = 2  # <EOT> token ID
 
-            # Generate tokens one by one using model's next‑token API.
-            # For Kneser–Ney 4‑gram, this will look at up to the last 3 tokens.
+            # Generate tokens one by one using trigram context (w1, w2).
             while len(generated_tokens) < max_length:
-                history = generated_tokens[-3:] if len(generated_tokens) >= 1 else []
-
-                # Some older models may not implement the new signature; fall back if needed.
-                if hasattr(model, "generate_next_token"):
-                    try:
-                        next_token = model.generate_next_token(history, temperature=temperature)
-                    except TypeError:
-                        # Legacy trigram signature generate_next_token(w1, w2, temperature)
-                        if len(generated_tokens) < 2:
-                            w1, w2 = 0, generated_tokens[0] if generated_tokens else 0
-                        else:
-                            w1, w2 = generated_tokens[-2], generated_tokens[-1]
-                        next_token = model.generate_next_token(w1, w2, temperature=temperature)  # type: ignore
+                if len(generated_tokens) < 2:
+                    w1, w2 = 0, generated_tokens[0] if generated_tokens else 0
                 else:
-                    # As a last resort, regenerate the whole sequence up to next length
-                    next_tokens = model.generate(generated_tokens, max_length=len(generated_tokens) + 1, temperature=temperature)
-                    next_token = next_tokens[-1]
-
+                    w1, w2 = generated_tokens[-2], generated_tokens[-1]
+                next_token = model.generate_next_token(w1, w2, temperature=temperature)
                 generated_tokens.append(next_token)
 
                 # Decode current state
