@@ -84,12 +84,17 @@ def load_models():
 
 @app.on_event("startup")
 async def startup_event():
-    """Load models on startup."""
-    try:
-        load_models()
-    except Exception as e:
-        print(f"Error loading models: {e}")
-        print("Models will be loaded lazily on first request.")
+    """Load models in background so app can respond to healthchecks immediately."""
+    import asyncio
+
+    def _load():
+        try:
+            load_models()
+        except Exception as e:
+            print(f"Error loading models: {e}")
+            print("Models will be loaded lazily on first request.")
+
+    asyncio.get_event_loop().run_in_executor(None, _load)
 
 
 @app.get("/")

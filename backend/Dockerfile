@@ -28,5 +28,5 @@ RUN python data/create_sample_dataset.py && \
 # Expose port (Railway/Render set PORT env var)
 EXPOSE 8000
 
-# Run the application (port overridden by railway.json startCommand)
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with shell so $PORT is expanded; fallback to 8000 for local runs
+CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}
