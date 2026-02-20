@@ -2,12 +2,38 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+const FUNNY_LOADING_MESSAGES = [
+  'شہزادی کو تلاش کر رہے ہیں...',
+  'الفاظ کو اکٹھا کر رہے ہیں...',
+  'کہانی کی جن کو بیدار کر رہے ہیں...',
+  'الفاظ کو ترتیب دے رہے ہیں...',
+  'جادوئی قلم چل رہی ہے...',
+  'کہانی پک رہی ہے، تھوڑا انتظار کریں!',
+  'الفاظ دوڑ رہے ہیں...',
+  'کہانی کی بو آ رہی ہے... تقریباً تیار!',
+  'شہزادے کو جگا رہے ہیں...',
+  'الفاظ گھر آ رہے ہیں...',
+];
+
+const SUGGESTIONS = [
+  'ایک بار ایک بادشاہ تھا',
+  'ایک کتا تھا',
+  'ایک چوہا تھا',
+  'ایک چالاک لومڑی تھی',
+  'ایک شہزادی تھی',
+  'ایک ڈریگن تھا',
+  'ایک جادوگر تھا',
+  'ایک پرندہ تھا',
+];
+
 export default function Home() {
   const [prefix, setPrefix] = useState('');
   const [story, setStory] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState(FUNNY_LOADING_MESSAGES[0]);
   const storyEndRef = useRef<HTMLDivElement>(null);
+  const storyContainerRef = useRef<HTMLDivElement>(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -18,6 +44,20 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom();
   }, [story]);
+
+  // Cycle through funny loading messages
+  useEffect(() => {
+    if (!isGenerating) return;
+    const idx = Math.floor(Math.random() * FUNNY_LOADING_MESSAGES.length);
+    setLoadingMessage(FUNNY_LOADING_MESSAGES[idx]);
+    const interval = setInterval(() => {
+      setLoadingMessage((prev) => {
+        const others = FUNNY_LOADING_MESSAGES.filter((m) => m !== prev);
+        return others[Math.floor(Math.random() * others.length)];
+      });
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isGenerating]);
 
   const generateStory = async () => {
     if (!prefix.trim()) {
@@ -52,7 +92,7 @@ export default function Home() {
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -100,24 +140,42 @@ export default function Home() {
     }
   };
 
+  const pickSuggestion = (s: string) => {
+    setPrefix(s);
+    setError(null);
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2">
+    <main className="min-h-screen overflow-y-auto bg-gradient-to-b from-amber-50 via-orange-50 to-rose-100 dark:from-stone-950 dark:via-amber-950/30 dark:to-rose-950/20">
+      {/* Decorative floating elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <span className="absolute top-20 left-10 text-6xl opacity-20 animate-float">📖</span>
+        <span className="absolute top-40 right-16 text-5xl opacity-20 animate-float-delayed">✨</span>
+        <span className="absolute bottom-40 left-20 text-4xl opacity-20 animate-float">🌟</span>
+        <span className="absolute bottom-20 right-24 text-5xl opacity-20 animate-float-delayed">🪄</span>
+      </div>
+
+      <div className="relative container mx-auto px-4 py-6 max-w-3xl space-y-12 pb-24">
+        {/* Hero Section - Scrollable top */}
+        <section className="scroll-mt-6 pt-4">
+          <div className="text-center space-y-3 animate-fade-in">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-amber-600 via-orange-500 to-rose-500 bg-clip-text text-transparent drop-shadow-sm">
               اردو کہانی جنریٹر
             </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Urdu Story Generator - Create beautiful children's stories
+            <p className="text-lg text-amber-800/80 dark:text-amber-200/80 font-medium">
+              Urdu Story Generator
+            </p>
+            <p className="text-sm text-amber-700/70 dark:text-amber-300/70 max-w-md mx-auto">
+              بچوں کی کہانیاں بنائیں — جادو ایک کلک میں! 🧙‍♂️
             </p>
           </div>
+        </section>
 
-          {/* Input Section */}
-          <div className="mb-6">
-            <label htmlFor="prefix" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Starting Phrase (شروع کریں):
+        {/* Input Section */}
+        <section className="scroll-mt-6">
+          <div className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm rounded-2xl shadow-xl shadow-amber-200/30 dark:shadow-stone-900/50 border border-amber-200/50 dark:border-amber-800/30 p-6">
+            <label htmlFor="prefix" className="block text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
+              شروع کریں — اپنا جملہ لکھیں ✍️
             </label>
             <textarea
               id="prefix"
@@ -125,69 +183,111 @@ export default function Home() {
               onChange={(e) => setPrefix(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="مثال: ایک بار ایک بادشاہ تھا..."
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
+              className="w-full px-4 py-3 border-2 border-amber-200 dark:border-amber-700/50 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 dark:bg-stone-800 dark:text-amber-50 resize-none transition-all placeholder:text-amber-400/50"
               rows={3}
               dir="rtl"
               disabled={isGenerating}
             />
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Try: ایک بار ایک بادشاہ تھا • ایک کتا تھا • ایک چوہا تھا • ایک چالاک لومڑی تھی
-            </p>
-            <div className="mt-2 flex justify-between items-center">
+
+            {/* Quick suggestion chips - scrollable */}
+            <div className="mt-3">
+              <p className="text-xs font-medium text-amber-700/80 dark:text-amber-300/80 mb-2">
+                یا یہاں سے منتخب کریں 👇
+              </p>
+              <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => pickSuggestion(s)}
+                    className="px-3 py-1.5 text-sm rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300/50 dark:border-amber-700/50 hover:bg-amber-200 dark:hover:bg-amber-800/50 hover:scale-105 transition-all whitespace-nowrap"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
               <button
                 onClick={generateStory}
                 disabled={isGenerating || !prefix.trim()}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all hover:scale-105 active:scale-95"
               >
-                {isGenerating ? 'Generating...' : 'Generate Story'}
+                {isGenerating ? '⏳ جنریٹ ہو رہا ہے...' : '🚀 کہانی بنائیں'}
               </button>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Press Enter to generate
+              <span className="text-xs text-amber-600/70 dark:text-amber-400/70">
+                Enter دبائیں — تیز! ⚡
               </span>
             </div>
           </div>
+        </section>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
-              <strong>Error:</strong> {error}
+        {/* Error Display */}
+        {error && (
+          <section className="scroll-mt-6 animate-shake">
+            <div className="p-4 bg-red-100 dark:bg-red-900/40 border-2 border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200">
+              <strong>اوہ! 😅</strong> {error}
             </div>
-          )}
+          </section>
+        )}
 
-          {/* Story Display */}
-          <div className="mt-6">
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
-              Generated Story:
-            </h2>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 min-h-[300px] max-h-[600px] overflow-y-auto border border-gray-200 dark:border-gray-700">
-              {story ? (
-                <div className="text-lg text-gray-800 dark:text-gray-200 leading-relaxed" dir="rtl">
-                  {story}
-                  {isGenerating && (
-                    <span className="inline-block w-2 h-5 bg-indigo-600 animate-pulse ml-1">|</span>
-                  )}
-                </div>
-              ) : (
-                <div className="text-gray-400 dark:text-gray-500 text-center py-12">
-                  {isGenerating ? (
-                    <div className="flex flex-col items-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-                      <p>Generating your story...</p>
+        {/* Story Display - Scrollable book-like area */}
+        <section className="scroll-mt-6">
+          <h2 className="text-xl font-bold text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
+            <span>📜</span> آپ کی کہانی
+          </h2>
+          <div
+            ref={storyContainerRef}
+            className="relative min-h-[320px] max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-2xl border-2 border-amber-200/60 dark:border-amber-800/40 bg-gradient-to-b from-amber-50/90 to-orange-50/70 dark:from-stone-900/90 dark:to-amber-950/30 p-8 shadow-inner scroll-smooth"
+          >
+            {story ? (
+              <div className="text-lg md:text-xl text-amber-900 dark:text-amber-100 leading-loose font-medium" dir="rtl">
+                {story}
+                {isGenerating && (
+                  <span className="inline-block w-2 h-6 bg-amber-500 animate-blink ml-1 align-middle" />
+                )}
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                {isGenerating ? (
+                  <>
+                    <div className="text-6xl mb-4 animate-bounce">📚</div>
+                    <p className="text-amber-700 dark:text-amber-300 font-medium animate-pulse">
+                      {loadingMessage}
+                    </p>
+                    <div className="mt-4 flex gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="w-2 h-2 rounded-full bg-amber-500 animate-ping"
+                          style={{ animationDelay: `${i * 200}ms` }}
+                        />
+                      ))}
                     </div>
-                  ) : (
-                    <p>Your generated story will appear here</p>
-                  )}
-                </div>
-              )}
-              <div ref={storyEndRef} />
-            </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-5xl mb-4 opacity-40">📖</p>
+                    <p className="text-amber-600/80 dark:text-amber-400/80">
+                      کہانی یہاں ظاہر ہوگی
+                    </p>
+                    <p className="text-sm text-amber-500/60 dark:text-amber-500/60 mt-1">
+                      اوپر ایک جملہ لکھیں اور &quot;کہانی بنائیں&quot; دبائیں! 🎉
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+            <div ref={storyEndRef} />
           </div>
+        </section>
 
-          {/* Footer */}
-          <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>Powered by Trigram Language Model & Word Tokenizer</p>
-          </div>
-        </div>
+        {/* Footer - Playful */}
+        <footer className="text-center text-sm text-amber-600/70 dark:text-amber-500/70 pt-4">
+          <p>Powered by Trigram Language Model & Word Tokenizer</p>
+          <p className="mt-1 text-xs opacity-75">کہانیاں بنانے والا جادو 🪄</p>
+        </footer>
       </div>
     </main>
   );
