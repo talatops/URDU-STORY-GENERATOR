@@ -29,4 +29,4 @@ RUN python data/create_sample_dataset.py && \
 EXPOSE 8000
 
 # Run with shell so $PORT is expanded; fallback to 8000 for local runs
-CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
