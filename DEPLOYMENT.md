@@ -100,6 +100,8 @@ On the free tier, the service **spins down after 15 minutes of inactivity**. The
 | **Build Command** | `npm run build` (default) |
 | **Output Directory** | `.next` (default) |
 
+> **Critical:** You **must** set **Root Directory** to `frontend`. If left empty or set to `.`, Vercel will detect the Python backend and fail with "No fastapi entrypoint found". The backend is deployed separately on Render.
+
 ### Step 3: Environment Variable
 
 Add this variable before deploying:
@@ -151,6 +153,10 @@ allow_origins=[
 ---
 
 ## Troubleshooting
+
+### Frontend: "No fastapi entrypoint found"
+- **Cause:** Vercel is building from the repo root instead of the `frontend` directory, and it detects the Python backend.
+- **Fix:** In Vercel Dashboard → Project Settings → General → **Root Directory**, set to `frontend` (not empty, not `.`). Redeploy.
 
 ### Backend: "Models not found"
 - Ensure the build command runs the full pipeline (create_sample_dataset → preprocess → train_tokenizer → train_model)
