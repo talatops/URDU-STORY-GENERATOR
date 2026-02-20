@@ -1,0 +1,16 @@
+# Requirements for Urdu Story Generation System
+
+# Data Collection
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Data Processing
+numpy>=1.24.0
+
+# Backend
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Frontend dependencies are in frontend/package.json
