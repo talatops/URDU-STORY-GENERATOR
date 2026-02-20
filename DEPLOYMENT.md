@@ -107,7 +107,10 @@ Set **Root Directory** to `.` (project root) so the Dockerfile build context inc
 
 ### Step 4: Connect Frontend
 
-Add the Railway backend URL to your Vercel frontend env var: `NEXT_PUBLIC_API_URL` = `https://your-service.up.railway.app`
+1. In Vercel → Project → **Settings** → **Environment Variables**
+2. Add `NEXT_PUBLIC_API_URL` = `https://your-service.up.railway.app` (no trailing slash)
+3. Apply to **Production** (and **Preview** if testing)
+4. **Redeploy** — `NEXT_PUBLIC_` vars are embedded at build time; changing them requires a new deployment
 
 ---
 

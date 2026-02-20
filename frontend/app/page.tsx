@@ -35,7 +35,7 @@ export default function Home() {
   const storyEndRef = useRef<HTMLDivElement>(null);
   const storyContainerRef = useRef<HTMLDivElement>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
   const scrollToBottom = () => {
     storyEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -128,7 +128,10 @@ export default function Home() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const msg = err instanceof Error ? err.message : 'An error occurred';
+      setError(msg.includes('fetch') || msg.includes('Failed') || msg.includes('Network')
+        ? `${msg} — Check that NEXT_PUBLIC_API_URL is set in Vercel and redeploy.`
+        : msg);
       setIsGenerating(false);
     }
   };
